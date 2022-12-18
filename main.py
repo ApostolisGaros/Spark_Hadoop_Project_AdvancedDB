@@ -133,19 +133,38 @@ def day_of_week(x):
         return "Not a day of the week"
 
 
-start_Q4 = time.time()
+# start_Q4 = time.time()
 
 #find the top 3 hours of the day with the most passengers in a taxi
-df_taxi_trips.groupBy([hour(col("tpep_pickup_datetime")),dayofweek(col("tpep_pickup_datetime"))])\
-.agg(max("Passenger_count").alias("max_passenger_count"))\
-.withColumn("index", row_number().over(Window.partitionBy("dayofweek(tpep_pickup_datetime)").orderBy(desc("max_passenger_count"))))\
-.filter(col("index") <= 3)\
-.sort(asc("dayofweek(tpep_pickup_datetime)"),asc("index"))\
-.show()
+# df_taxi_trips.groupBy([dayofweek(col("tpep_pickup_datetime")), hour(col("tpep_pickup_datetime"))])\
+# .agg(max("Passenger_count").alias("max_passenger_count"))\
+# .withColumn("index", row_number().over(Window.partitionBy("dayofweek(tpep_pickup_datetime)").orderBy(desc("max_passenger_count"))))\
+# .filter(col("index") <= 3)\
+# .sort(asc("dayofweek(tpep_pickup_datetime)"),asc("index"))\
+# .show()
 
 # .withColumn("dayofweek(tpep_pickup_datetime)", udf(day_of_week, StringType())(col("dayofweek(tpep_pickup_datetime)")))\
 # 25% worse performance
 
-end_Q4 = time.time()
+# end_Q4 = time.time()
 
-print(f'Q4 time taken: {end_Q4-start_Q4} seconds.')
+# print(f'Q4 time taken: {end_Q4-start_Q4} seconds.')
+
+# Query 5
+
+start_Q5 = time.time()
+
+# Να βρεθούν οι κορυφαίες πέντε (top 5) ημέρες ανά μήνα στις οποίες οι κούρσες είχαν το μεγαλύτερο ποσοστό σε tip
+df_taxi_trips.groupBy([month(col("tpep_pickup_datetime")), dayofmonth(col("tpep_pickup_datetime"))])\
+.agg(sum("Fare_amount").alias("sum_fare_amount"), sum("Tip_amount").alias("sum_tip_amount"))\
+.withColumn("tip_percentage", col("sum_tip_amount")/col("sum_fare_amount"))\
+.withColumn("index", row_number().over(Window.partitionBy("month(tpep_pickup_datetime)").orderBy(desc("tip_percentage"))))\
+.filter(col("index") <= 5)\
+.sort(asc("month(tpep_pickup_datetime)"),asc("index"))\
+.drop("sum_fare_amount", "sum_tip_amount")\
+.show(100)
+
+end_Q5 = time.time()
+
+print(f'Q5 time taken: {end_Q5-start_Q5} seconds.')
+
