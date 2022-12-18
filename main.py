@@ -15,9 +15,13 @@ hdfs_path = "hdfs://192.168.0.2:9000/user/user/data/"
 
 # Read the Parquet files from HDFS and create a dataframe
 df_taxi_trips = spark.read.parquet(hdfs_path + "yellow_tripdata_2022-01.parquet", hdfs_path + "yellow_tripdata_2022-02.parquet", hdfs_path + "yellow_tripdata_2022-03.parquet", hdfs_path + "yellow_tripdata_2022-04.parquet", hdfs_path + "yellow_tripdata_2022-05.parquet", hdfs_path + "yellow_tripdata_2022-06.parquet")
+df_taxi_trips_2 = spark.read.parquet(hdfs_path + "yellow_tripdata_2022-01.parquet")
+
 
 # create the rdd from the dataframe
-rdd_taxi_trips = df_taxi_trips.rdd
+# rdd_taxi_trips = df_taxi_trips.rdd
+rdd_taxi_trips = df_taxi_trips_2.rdd
+
 
 # read csv file
 df_taxi_zone_lookup = spark.read.csv(hdfs_path + "taxi_zone_lookup.csv")
@@ -85,25 +89,17 @@ rdd_taxi_zone_lookup = df_taxi_zone_lookup.rdd
 # start_Q3_RDD = time.time()
 
 # print(rdd_taxi_trips.filter(lambda x: x.PULocationID != x.DOLocationID)\
-# .map(lambda x: (str((x.tpep_pickup_datetime.day,x.tpep_pickup_datetime.month)),(float(x.trip_distance),float(x.total_amount))))\
+# .map(lambda x: ((x.tpep_pickup_datetime.day,x.tpep_pickup_datetime.month),(float(x.trip_distance),float(x.total_amount),1)))\
+# .reduceByKey(lambda x,y: (x[0]+y[0],x[1]+y[1],x[2]+y[2]))\
+# .map(lambda x: (x[0],(x[1][0]/x[1][2],x[1][1]/x[1][2])))\
+# .sortBy(lambda x: (x[0][1],x[0][0]))\
+# .zipWithIndex()\
+# .map(lambda x: (int(str(x[1]/15)[0]),x[0][1],1))\
+# .reduceByKey(lambda x,y: (x[0]+y[0],x[1]+y[1],x[2]+y[2]))\
+# .map(lambda x: (x[0],(x[1][0]/x[1][2],x[1][1]/x[1][2])))\
+# .take(200))
 
-# .take(20))
-    
 
-# .groupByKey()\
-# .mapValues(list)\
-# .map(lambda x: list(x))\
-# .take(20))
-
-# .mapValues(lambda x: (sum([y.trip_distance for y in x]),sum([y.total_amount for y in x])))\
-# .sortByKey()\
-# .map(lambda x: (x[0][1],x[0][0],x[1][0],x[1][1]))\
-# .map(lambda x: (x[0],x[1],x[2],x[3],(x[0],x[1])))\
-# .map(lambda x: (x[4],(x[2],x[3])))\
-# .groupByKey()\
-# .mapValues(lambda x: (sum([y[0] for y in x])/15,sum([y[1] for y in x])/15))\
-# .sortByKey()\
-# .map(lambda x: (x[0][0],x[0][1],x[1][0],x[1][1]))\
 
 # end_Q3_RDD = time.time()
 
@@ -114,23 +110,23 @@ rdd_taxi_zone_lookup = df_taxi_zone_lookup.rdd
 #Να βρεθούν οι τρεις μεγαλύτερες (top3)ώρες αιχμής ανάημέρα της εβδομάδος, εννοώντας τις ώρες (π.χ., 7-8πμ, 3-4μμ, κλπ) της ημέρας με τον μεγαλύτερο αριθμό επιβατών σε μια κούρσα ταξί.Ο υπολογισμός αφορά όλους τους μήνες
 
 
-def day_of_week(x):
-    if x == 1:
-        return "Sunday"
-    elif x == 2:
-        return "Monday"
-    elif x == 3:
-        return "Tuesday"
-    elif x == 4:
-        return "Wednesday"
-    elif x == 5:
-        return "Thursday"
-    elif x == 6:
-        return "Friday"
-    elif x == 7:
-        return "Saturday"
-    else:
-        return "Not a day of the week"
+# def day_of_week(x):
+#     if x == 1:
+#         return "Sunday"
+#     elif x == 2:
+#         return "Monday"
+#     elif x == 3:
+#         return "Tuesday"
+#     elif x == 4:
+#         return "Wednesday"
+#     elif x == 5:
+#         return "Thursday"
+#     elif x == 6:
+#         return "Friday"
+#     elif x == 7:
+#         return "Saturday"
+#     else:
+#         return "Not a day of the week"
 
 
 # start_Q4 = time.time()
@@ -152,19 +148,19 @@ def day_of_week(x):
 
 # Query 5
 
-start_Q5 = time.time()
+# start_Q5 = time.time()
 
-# Να βρεθούν οι κορυφαίες πέντε (top 5) ημέρες ανά μήνα στις οποίες οι κούρσες είχαν το μεγαλύτερο ποσοστό σε tip
-df_taxi_trips.groupBy([month(col("tpep_pickup_datetime")), dayofmonth(col("tpep_pickup_datetime"))])\
-.agg(sum("Fare_amount").alias("sum_fare_amount"), sum("Tip_amount").alias("sum_tip_amount"))\
-.withColumn("tip_percentage", col("sum_tip_amount")/col("sum_fare_amount"))\
-.withColumn("index", row_number().over(Window.partitionBy("month(tpep_pickup_datetime)").orderBy(desc("tip_percentage"))))\
-.filter(col("index") <= 5)\
-.sort(asc("month(tpep_pickup_datetime)"),asc("index"))\
-.drop("sum_fare_amount", "sum_tip_amount")\
-.show(100)
+# # Να βρεθούν οι κορυφαίες πέντε (top 5) ημέρες ανά μήνα στις οποίες οι κούρσες είχαν το μεγαλύτερο ποσοστό σε tip
+# df_taxi_trips.groupBy([month(col("tpep_pickup_datetime")), dayofmonth(col("tpep_pickup_datetime"))])\
+# .agg(sum("Fare_amount").alias("sum_fare_amount"), sum("Tip_amount").alias("sum_tip_amount"))\
+# .withColumn("tip_percentage", col("sum_tip_amount")/col("sum_fare_amount"))\
+# .withColumn("index", row_number().over(Window.partitionBy("month(tpep_pickup_datetime)").orderBy(desc("tip_percentage"))))\
+# .filter(col("index") <= 5)\
+# .sort(asc("month(tpep_pickup_datetime)"),asc("index"))\
+# .drop("sum_fare_amount", "sum_tip_amount")\
+# .show(100)
 
-end_Q5 = time.time()
+# end_Q5 = time.time()
 
-print(f'Q5 time taken: {end_Q5-start_Q5} seconds.')
+# print(f'Q5 time taken: {end_Q5-start_Q5} seconds.')
 
