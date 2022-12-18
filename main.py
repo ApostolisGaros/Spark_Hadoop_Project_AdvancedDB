@@ -1,5 +1,6 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, sum, desc, row_number, asc, max, month, dayofmonth, hour,round,floor
+from pyspark.sql.functions import col, sum,avg, desc, row_number, asc, max, month, dayofmonth, hour,round,floor,dayofweek,udf
+from pyspark.sql.types import StringType
 import sys,time,os
 from pyspark.sql.window import Window
 from pyspark.sql.functions import col
@@ -41,7 +42,6 @@ rdd_taxi_zone_lookup = df_taxi_zone_lookup.rdd
 # print(f'Q1 time taken: {end_Q1-start_Q1} seconds.')
 
 
-
 # Query 2
 
 # start_Q2 = time.time()
@@ -67,12 +67,12 @@ rdd_taxi_zone_lookup = df_taxi_zone_lookup.rdd
 
 # df_taxi_trips.filter(col("PULocationID") != col("DOLocationID"))\
 # .groupBy([dayofmonth(col("tpep_pickup_datetime")),month(col("tpep_pickup_datetime"))])\
-# .agg(sum("trip_distance").alias("sum_trip_distance"),sum("total_amount").alias("sum_total_amount"))\
+# .agg(avg("trip_distance").alias("avg_trip_distance"),avg("total_amount").alias("avg_total_amount"))\
 # .sort(asc("month(tpep_pickup_datetime)"),asc("dayofmonth(tpep_pickup_datetime)"))\
 # .withColumn("index", row_number().over(Window.orderBy("month(tpep_pickup_datetime)","dayofmonth(tpep_pickup_datetime)")))\
 # .withColumn("group", floor((col("index")-1)/15))\
 # .groupBy("group")\
-# .agg(round(sum("sum_trip_distance")/15,2).alias("avg_trip_distance"),round(sum("sum_total_amount")/15,2).alias("avg_total_amount"))\
+# .agg(round(avg("avg_trip_distance"),2).alias("15_day_avg_trip_distance"),round(avg("avg_total_amount"),2).alias("15_day_avg_total_amount"))\
 # .show()
 
 # end_Q3_DF = time.time()
@@ -89,14 +89,6 @@ rdd_taxi_zone_lookup = df_taxi_zone_lookup.rdd
 
 # .take(20))
     
-
-
-
-
-
-
-
-
 
 # .groupByKey()\
 # .mapValues(list)\
@@ -116,3 +108,44 @@ rdd_taxi_zone_lookup = df_taxi_zone_lookup.rdd
 # end_Q3_RDD = time.time()
 
 # print(f'Q3_RDD time taken: {end_Q3_RDD-start_Q3_RDD} seconds.')
+
+# Query 4
+
+#Να βρεθούν οι τρεις μεγαλύτερες (top3)ώρες αιχμής ανάημέρα της εβδομάδος, εννοώντας τις ώρες (π.χ., 7-8πμ, 3-4μμ, κλπ) της ημέρας με τον μεγαλύτερο αριθμό επιβατών σε μια κούρσα ταξί.Ο υπολογισμός αφορά όλους τους μήνες
+
+
+def day_of_week(x):
+    if x == 1:
+        return "Sunday"
+    elif x == 2:
+        return "Monday"
+    elif x == 3:
+        return "Tuesday"
+    elif x == 4:
+        return "Wednesday"
+    elif x == 5:
+        return "Thursday"
+    elif x == 6:
+        return "Friday"
+    elif x == 7:
+        return "Saturday"
+    else:
+        return "Not a day of the week"
+
+
+start_Q4 = time.time()
+
+#find the top 3 hours of the day with the most passengers in a taxi
+df_taxi_trips.groupBy([hour(col("tpep_pickup_datetime")),dayofweek(col("tpep_pickup_datetime"))])\
+.agg(max("Passenger_count").alias("max_passenger_count"))\
+.withColumn("index", row_number().over(Window.partitionBy("dayofweek(tpep_pickup_datetime)").orderBy(desc("max_passenger_count"))))\
+.filter(col("index") <= 3)\
+.sort(asc("dayofweek(tpep_pickup_datetime)"),asc("index"))\
+.show()
+
+# .withColumn("dayofweek(tpep_pickup_datetime)", udf(day_of_week, StringType())(col("dayofweek(tpep_pickup_datetime)")))\
+# 25% worse performance
+
+end_Q4 = time.time()
+
+print(f'Q4 time taken: {end_Q4-start_Q4} seconds.')
