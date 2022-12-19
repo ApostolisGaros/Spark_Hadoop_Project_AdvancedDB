@@ -15,12 +15,10 @@ hdfs_path = "hdfs://192.168.0.2:9000/user/user/data/"
 
 # Read the Parquet files from HDFS and create a dataframe
 df_taxi_trips = spark.read.parquet(hdfs_path + "yellow_tripdata_2022-01.parquet", hdfs_path + "yellow_tripdata_2022-02.parquet", hdfs_path + "yellow_tripdata_2022-03.parquet", hdfs_path + "yellow_tripdata_2022-04.parquet", hdfs_path + "yellow_tripdata_2022-05.parquet", hdfs_path + "yellow_tripdata_2022-06.parquet")
-df_taxi_trips_2 = spark.read.parquet(hdfs_path + "yellow_tripdata_2022-01.parquet")
 
 
 # create the rdd from the dataframe
-# rdd_taxi_trips = df_taxi_trips.rdd
-rdd_taxi_trips = df_taxi_trips_2.rdd
+rdd_taxi_trips = df_taxi_trips.rdd
 
 
 # read csv file
@@ -67,43 +65,42 @@ rdd_taxi_zone_lookup = df_taxi_zone_lookup.rdd
 # Query 3
 
 #Να βρεθεί, ανά15 ημέρες,ο μέσος όρος της απόστασης και του κόστους για όλες τις διαδρομές με σημείο αναχώρησης διαφορετικό από το σημείο άφιξης.
-# start_Q3_DF = time.time()
+start_Q3_DF = time.time()
 
-# df_taxi_trips.filter(col("PULocationID") != col("DOLocationID"))\
-# .groupBy([dayofmonth(col("tpep_pickup_datetime")),month(col("tpep_pickup_datetime"))])\
-# .agg(avg("trip_distance").alias("avg_trip_distance"),avg("total_amount").alias("avg_total_amount"))\
-# .sort(asc("month(tpep_pickup_datetime)"),asc("dayofmonth(tpep_pickup_datetime)"))\
-# .withColumn("index", row_number().over(Window.orderBy("month(tpep_pickup_datetime)","dayofmonth(tpep_pickup_datetime)")))\
-# .withColumn("group", floor((col("index")-1)/15))\
-# .groupBy("group")\
-# .agg(round(avg("avg_trip_distance"),2).alias("15_day_avg_trip_distance"),round(avg("avg_total_amount"),2).alias("15_day_avg_total_amount"))\
-# .show()
+df_taxi_trips.filter(col("PULocationID") != col("DOLocationID"))\
+.groupBy([dayofmonth(col("tpep_pickup_datetime")),month(col("tpep_pickup_datetime"))])\
+.agg(avg("trip_distance").alias("avg_trip_distance"),avg("total_amount").alias("avg_total_amount"))\
+.sort(asc("month(tpep_pickup_datetime)"),asc("dayofmonth(tpep_pickup_datetime)"))\
+.withColumn("index", row_number().over(Window.orderBy("month(tpep_pickup_datetime)","dayofmonth(tpep_pickup_datetime)")))\
+.withColumn("group", floor((col("index")-1)/15))\
+.groupBy("group")\
+.agg(round(avg("avg_trip_distance"),2).alias("15_day_avg_trip_distance"),round(avg("avg_total_amount"),2).alias("15_day_avg_total_amount"))\
+.show()
 
-# end_Q3_DF = time.time()
+end_Q3_DF = time.time()
 
-# print(f'Q3_DF time taken: {end_Q3_DF-start_Q3_DF} seconds.')
+print(f'Q3_DF time taken: {end_Q3_DF-start_Q3_DF} seconds.')
 
 #Να βρεθεί, ανά15 ημέρες,ο μέσος όρος της απόστασης και του κόστους για όλες τις διαδρομές με σημείο αναχώρησης διαφορετικό από το σημείο άφιξης.
 # using RDD
 
-# start_Q3_RDD = time.time()
+start_Q3_RDD = time.time()
 
-# print(rdd_taxi_trips.filter(lambda x: x.PULocationID != x.DOLocationID)\
-# .map(lambda x: ((x.tpep_pickup_datetime.day,x.tpep_pickup_datetime.month),(float(x.trip_distance),float(x.total_amount),1)))\
-# .reduceByKey(lambda x,y: (x[0]+y[0],x[1]+y[1],x[2]+y[2]))\
-# .map(lambda x: (x[0],(x[1][0]/x[1][2],x[1][1]/x[1][2])))\
-# .sortBy(lambda x: (x[0][1],x[0][0]))\
-# .zipWithIndex()\
-# .map(lambda x: (int(str(x[1]/15)[0]),x[0][1],1))\
-# .reduceByKey(lambda x,y: (x[0]+y[0],x[1]+y[1],x[2]+y[2]))\
-# .map(lambda x: (x[0],(x[1][0]/x[1][2],x[1][1]/x[1][2])))\
-# .take(200))
+print(rdd_taxi_trips.filter(lambda x: x.PULocationID != x.DOLocationID)\
+.map(lambda x: ((x.tpep_pickup_datetime.day,x.tpep_pickup_datetime.month),(float(x.trip_distance),float(x.total_amount),1)))\
+.reduceByKey(lambda x,y: (x[0]+y[0],x[1]+y[1],x[2]+y[2]))\
+.map(lambda x: (x[0],(x[1][0]/x[1][2],x[1][1]/x[1][2])))\
+.sortBy(lambda x: (x[0][1],x[0][0]))\
+.zipWithIndex()\
+.map(lambda x: (int(str(x[1]/15)[0]),(x[0][1][0],x[0][1][1],1)))\
+.reduceByKey(lambda x,y: (x[0]+y[0],x[1]+y[1],x[2]+y[2]))\
+.map(lambda x: (x[0],(x[1][0]/x[1][2],x[1][1]/x[1][2])))\
+.take(20))
 
 
+end_Q3_RDD = time.time()
 
-# end_Q3_RDD = time.time()
-
-# print(f'Q3_RDD time taken: {end_Q3_RDD-start_Q3_RDD} seconds.')
+print(f'Q3_RDD time taken: {end_Q3_RDD-start_Q3_RDD} seconds.')
 
 # Query 4
 
