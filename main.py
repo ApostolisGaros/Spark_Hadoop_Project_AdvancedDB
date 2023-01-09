@@ -5,12 +5,12 @@ import sys,time,os
 from pyspark.sql.window import Window
 from pyspark.sql.functions import col
 
-spark = SparkSession.builder.master("spark://192.168.0.2:7077").getOrCreate()
+
+spark = SparkSession.builder.master("spark://192.168.0.2:7077").appName("advDB").getOrCreate()
 print("spark session created")
 
 # Path to the data
 hdfs_path = "hdfs://192.168.0.2:9000/user/user/data/"
-
 
 
 # Read the Parquet files from HDFS and create a dataframe
@@ -30,37 +30,37 @@ rdd_taxi_zone_lookup = df_taxi_zone_lookup.rdd
 
 # Query 1
 
-# start_Q1 = time.time()
+start_Q1 = time.time()
 
-# # Να βρεθεί η διαδρομή με το μεγαλύτερο φιλοδώρημα (tip)τον Μάρτιο και σημείο άφιξης το "BatteryPark"
-# df_taxi_trips.filter(month(col("tpep_pickup_datetime")) == 3)\
-#     .join(df_taxi_zone_lookup, [df_taxi_trips.DOLocationID == df_taxi_zone_lookup._c0, df_taxi_zone_lookup._c2 == "Battery Park"])\
-#     .sort(desc("tip_amount"))\
-#     .drop("_c0","_c1","_c2","_c3")\
-#     .show(1)
+# Να βρεθεί η διαδρομή με το μεγαλύτερο φιλοδώρημα (tip)τον Μάρτιο και σημείο άφιξης το "BatteryPark"
+df_taxi_trips.filter(month(col("tpep_pickup_datetime")) == 3)\
+    .join(df_taxi_zone_lookup, [df_taxi_trips.DOLocationID == df_taxi_zone_lookup._c0, df_taxi_zone_lookup._c2 == "Battery Park"])\
+    .sort(desc("tip_amount"))\
+    .drop("_c0","_c1","_c2","_c3")\
+    .show(1)
 
 
-# end_Q1 = time.time()
-# print(f'Q1 time taken: {end_Q1-start_Q1} seconds.')
+end_Q1 = time.time()
+print(f'Q1 time taken: {end_Q1-start_Q1} seconds.')
 
 
 # Query 2
 
-# start_Q2 = time.time()
+start_Q2 = time.time()
 
-# # Να βρεθεί,για κάθε μήνα,η διαδρομή με το υψηλότερο ποσό στα διόδια. Αγνοήστε μηδενικά ποσά
-# df_taxi_trips.filter(col("Tolls_amount") > 0)\
-# .groupBy(month(col("tpep_pickup_datetime")))\
-# .agg(max("Tolls_amount")\
-# .alias("max_Tolls_amount"))\
-# .sort(asc("month(tpep_pickup_datetime)"))\
-# .join(df_taxi_trips, [month(col("tpep_pickup_datetime")) == col("month(tpep_pickup_datetime)"), col("Tolls_amount") == col("max_Tolls_amount")])\
-# .drop("month(tpep_pickup_datetime)","max_Tolls_amount")\
-# .show()
+# Να βρεθεί,για κάθε μήνα,η διαδρομή με το υψηλότερο ποσό στα διόδια. Αγνοήστε μηδενικά ποσά
+df_taxi_trips.filter(col("Tolls_amount") > 0)\
+.groupBy(month(col("tpep_pickup_datetime")))\
+.agg(max("Tolls_amount")\
+.alias("max_Tolls_amount"))\
+.sort(asc("month(tpep_pickup_datetime)"))\
+.join(df_taxi_trips, [month(col("tpep_pickup_datetime")) == col("month(tpep_pickup_datetime)"), col("Tolls_amount") == col("max_Tolls_amount")])\
+.drop("month(tpep_pickup_datetime)","max_Tolls_amount")\
+.show()
 
-# end_Q2 = time.time()
+end_Q2 = time.time()
 
-# print(f'Q2 time taken: {end_Q2-start_Q2} seconds.')
+print(f'Q2 time taken: {end_Q2-start_Q2} seconds.')
 
 # Query 3
 
@@ -107,58 +107,40 @@ print(f'Q3_RDD time taken: {end_Q3_RDD-start_Q3_RDD} seconds.')
 
 #Να βρεθούν οι τρεις μεγαλύτερες (top3)ώρες αιχμής ανάημέρα της εβδομάδος, εννοώντας τις ώρες (π.χ., 7-8πμ, 3-4μμ, κλπ) της ημέρας με τον μεγαλύτερο αριθμό επιβατών σε μια κούρσα ταξί.Ο υπολογισμός αφορά όλους τους μήνες
 
+start_Q4 = time.time()
 
-# def day_of_week(x):
-#     if x == 1:
-#         return "Sunday"
-#     elif x == 2:
-#         return "Monday"
-#     elif x == 3:
-#         return "Tuesday"
-#     elif x == 4:
-#         return "Wednesday"
-#     elif x == 5:
-#         return "Thursday"
-#     elif x == 6:
-#         return "Friday"
-#     elif x == 7:
-#         return "Saturday"
-#     else:
-#         return "Not a day of the week"
+# find the top 3 hours of the day with the most passengers in a taxi
+df_taxi_trips.groupBy([dayofweek(col("tpep_pickup_datetime")), hour(col("tpep_pickup_datetime"))])\
+.agg(max("Passenger_count").alias("max_passenger_count"))\
+.withColumn("index", row_number().over(Window.partitionBy("dayofweek(tpep_pickup_datetime)").orderBy(desc("max_passenger_count"))))\
+.filter(col("index") <= 3)\
+.sort(asc("dayofweek(tpep_pickup_datetime)"),asc("index"))\
+.show()
 
+end_Q4 = time.time()
 
-# start_Q4 = time.time()
-
-#find the top 3 hours of the day with the most passengers in a taxi
-# df_taxi_trips.groupBy([dayofweek(col("tpep_pickup_datetime")), hour(col("tpep_pickup_datetime"))])\
-# .agg(max("Passenger_count").alias("max_passenger_count"))\
-# .withColumn("index", row_number().over(Window.partitionBy("dayofweek(tpep_pickup_datetime)").orderBy(desc("max_passenger_count"))))\
-# .filter(col("index") <= 3)\
-# .sort(asc("dayofweek(tpep_pickup_datetime)"),asc("index"))\
-# .show()
-
-# .withColumn("dayofweek(tpep_pickup_datetime)", udf(day_of_week, StringType())(col("dayofweek(tpep_pickup_datetime)")))\
-# 25% worse performance
-
-# end_Q4 = time.time()
-
-# print(f'Q4 time taken: {end_Q4-start_Q4} seconds.')
+print(f'Q4 time taken: {end_Q4-start_Q4} seconds.')
 
 # Query 5
 
-# start_Q5 = time.time()
+start_Q5 = time.time()
 
-# # Να βρεθούν οι κορυφαίες πέντε (top 5) ημέρες ανά μήνα στις οποίες οι κούρσες είχαν το μεγαλύτερο ποσοστό σε tip
-# df_taxi_trips.groupBy([month(col("tpep_pickup_datetime")), dayofmonth(col("tpep_pickup_datetime"))])\
-# .agg(sum("Fare_amount").alias("sum_fare_amount"), sum("Tip_amount").alias("sum_tip_amount"))\
-# .withColumn("tip_percentage", col("sum_tip_amount")/col("sum_fare_amount"))\
-# .withColumn("index", row_number().over(Window.partitionBy("month(tpep_pickup_datetime)").orderBy(desc("tip_percentage"))))\
-# .filter(col("index") <= 5)\
-# .sort(asc("month(tpep_pickup_datetime)"),asc("index"))\
-# .drop("sum_fare_amount", "sum_tip_amount")\
-# .show(100)
+# Να βρεθούν οι κορυφαίες πέντε (top 5) ημέρες ανά μήνα στις οποίες οι κούρσες είχαν το μεγαλύτερο ποσοστό σε tip
+df_taxi_trips.groupBy([month(col("tpep_pickup_datetime")), dayofmonth(col("tpep_pickup_datetime"))])\
+.agg(sum("Fare_amount").alias("sum_fare_amount"), sum("Tip_amount").alias("sum_tip_amount"))\
+.withColumn("tip_percentage", col("sum_tip_amount")/col("sum_fare_amount"))\
+.withColumn("index", row_number().over(Window.partitionBy("month(tpep_pickup_datetime)").orderBy(desc("tip_percentage"))))\
+.filter(col("index") <= 5)\
+.sort(asc("month(tpep_pickup_datetime)"),asc("index"))\
+.drop("sum_fare_amount", "sum_tip_amount")\
+.show(100)
 
-# end_Q5 = time.time()
+end_Q5 = time.time()
 
-# print(f'Q5 time taken: {end_Q5-start_Q5} seconds.')
+print(f'Q5 time taken: {end_Q5-start_Q5} seconds.')
+
+
+
+
+
 
