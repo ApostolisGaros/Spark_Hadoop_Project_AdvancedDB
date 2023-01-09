@@ -14,7 +14,7 @@ To run the code, follow these steps:
 
 1. Clone the repository:
 
-> git clone https://github.com/ApostolisGaros/Spark_Hadoop_Project_AdvancedDB.git
+    > git clone https://github.com/ApostolisGaros/Spark_Hadoop_Project_AdvancedDB.git
 
 2. Navigate to the root directory of the project:
     > cd Spark_Hadoop_Project_AdvancedDB
