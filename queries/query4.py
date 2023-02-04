@@ -10,4 +10,4 @@ def query4(df_taxi_trips):
     .withColumn("index", row_number().over(Window.partitionBy("dayofweek(tpep_pickup_datetime)").orderBy(desc("max_passenger_count"))))\
     .filter(col("index") <= 3)\
     .sort(asc("dayofweek(tpep_pickup_datetime)"),asc("index"))\
-    .show()
+    .collect()

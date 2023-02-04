@@ -11,4 +11,4 @@ def query2(df_taxi_trips):
     .sort(asc("month(tpep_pickup_datetime)"))\
     .join(df_taxi_trips, [month(col("tpep_pickup_datetime")) == col("month(tpep_pickup_datetime)"), col("Tolls_amount") == col("max_Tolls_amount")])\
     .drop("month(tpep_pickup_datetime)","max_Tolls_amount")\
-    .show()
+    .collect()

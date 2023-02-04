@@ -11,5 +11,5 @@ def query5(df_taxi_trips):
     .filter(col("index") <= 5)\
     .sort(asc("month(tpep_pickup_datetime)"),asc("index"))\
     .drop("sum_fare_amount", "sum_tip_amount")\
-    .show(100)
+    .collect()
 

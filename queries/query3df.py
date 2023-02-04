@@ -12,4 +12,4 @@ def query3df(df_taxi_trips):
         .withColumn("group", floor((col("index")-1)/15))\
         .groupBy("group")\
         .agg(round(avg("avg_trip_distance"),2).alias("15_day_avg_trip_distance"),round(avg("avg_total_amount"),2).alias("15_day_avg_total_amount"))\
-        .show()
+        .collect()

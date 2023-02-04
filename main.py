@@ -49,8 +49,10 @@ rdd_taxi_zone_lookup = df_taxi_zone_lookup.rdd
 if queryNumber == "1":
     
     start_Q1 = time.time()
-    query1.query1(df_taxi_trips, df_taxi_zone_lookup)
+    q1results = query1.query1(df_taxi_trips, df_taxi_zone_lookup)
     end_Q1 = time.time()
+
+    print(q1results)
 
     print(f'Q1 time taken: {end_Q1-start_Q1} seconds.')
 
@@ -59,8 +61,11 @@ if queryNumber == "1":
 if queryNumber == "2":
 
     start_Q2 = time.time()
-    query2.query2(df_taxi_trips)
+    q2results = query2.query2(df_taxi_trips)
     end_Q2 = time.time()
+
+    for result in q2results:
+        print(result)
 
     print(f'Q2 time taken: {end_Q2-start_Q2} seconds.')
 
@@ -71,17 +76,18 @@ if queryNumber == "3":
     if queryType == "df": 
 
         start_Q3_DF = time.time()
-        query3df.query3df(df_taxi_trips)
+        q3dfresults = query3df.query3df(df_taxi_trips)
         end_Q3_DF = time.time()
+
+        for result in q3dfresults:
+            print(result)
 
         print(f'Q3_DF time taken: {end_Q3_DF-start_Q3_DF} seconds.')
        
     if queryType == "rdd":
         
         start_Q3_RDD = time.time()
-        # query3rdd.query3rdd(rdd_taxi_trips)
-        print(query3rdd.query3_rdd(rdd_taxi_trips))
-
+        print(query3rdd.query3rdd(rdd_taxi_trips))
         end_Q3_RDD = time.time()
 
         print(f'Q3_RDD time taken: {end_Q3_RDD-start_Q3_RDD} seconds.')
@@ -92,8 +98,11 @@ if queryNumber == "3":
 if queryNumber == "4":
 
     start_Q4 = time.time()
-    query4.query4(df_taxi_trips)
+    q4results =  query4.query4(df_taxi_trips)
     end_Q4 = time.time()
+
+    for result in q4results:
+        print(result)
 
     print(f'Q4 time taken: {end_Q4-start_Q4} seconds.')
 
@@ -102,8 +111,11 @@ if queryNumber == "4":
 if queryNumber == "5":
 
     start_Q5 = time.time()
-    query5.query5(df_taxi_trips)
+    q5results = query5.query5(df_taxi_trips)
     end_Q5 = time.time()
+
+    for result in q5results:
+        print(result)
 
     print(f'Q5 time taken: {end_Q5-start_Q5} seconds.')
 
