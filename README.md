@@ -21,7 +21,7 @@ To run the code, follow these steps:
 3. Run the following command:
     > python main.py
 
-This will execute the code in the `main.py` file, which will process the volume data using Apache Spark and HDFS.
+This will execute the code in the `main.py` file, which will process the volume data using Apache Spark and HDFS. The python script will ask for the number of the query you want to run. The queries are numbered from 1 to 5.
 
 ## Additional notes
 
